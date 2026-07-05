@@ -5,6 +5,7 @@ __pycache__/
 .venv/
 venv/
 downloads/
+summary_temp/
 
 # Node
 node_modules/

@@ -15,6 +15,12 @@
         :url="currentUrl"
       />
 
+      <SummaryPanel
+        v-if="videoInfo"
+        :url="currentUrl"
+        :title="videoInfo.title"
+      />
+
       <PlatformGrid v-if="!videoInfo" />
     </main>
 
@@ -30,6 +36,7 @@ import HeroSection from './components/HeroSection.vue'
 import VideoResult from './components/VideoResult.vue'
 import PlatformGrid from './components/PlatformGrid.vue'
 import AppFooter from './components/AppFooter.vue'
+import SummaryPanel from './components/summary/SummaryPanel.vue'
 
 const loading = ref(false)
 const parseError = ref('')

@@ -19,6 +19,7 @@ from services.task_manager import TaskManager
 from services.thumbnail_proxy import fetch_thumbnail
 from services.youtube_helper import friendly_youtube_error
 from services.douyin_helper import friendly_douyin_error
+from register_summary import register_summary_routes
 
 task_manager = TaskManager()
 
@@ -43,6 +44,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+register_summary_routes(app)
 
 
 @app.get("/api/health", response_model=HealthResponse)
