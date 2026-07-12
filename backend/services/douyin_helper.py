@@ -8,7 +8,8 @@ import tempfile
 import urllib.request
 from pathlib import Path
 from typing import Optional
-from urllib.parse import urlparse
+import re
+from urllib.parse import parse_qs, urlparse
 
 DEFAULT_UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -23,9 +24,31 @@ def is_douyin_url(url: str) -> bool:
     return any(host == h or host.endswith(f".{h}") for h in DOUYIN_HOSTS)
 
 
+def extract_douyin_video_id(url: str) -> str | None:
+    """Extract aweme/modal video id from various Douyin URL shapes."""
+    parsed = urlparse(url.strip())
+    query = parse_qs(parsed.query)
+    for key in ("modal_id", "item_ids", "group_id", "aweme_id"):
+        values = query.get(key)
+        if values:
+            match = re.search(r"(\d{8,24})", values[0])
+            if match:
+                return match.group(1)
+    for pattern in (r"/video/(\d{8,24})", r"/note/(\d{8,24})", r"/(\d{8,24})(?:/|$)"):
+        match = re.search(pattern, parsed.path)
+        if match:
+            return match.group(1)
+    fallback = re.search(r"(\d{15,24})", url)
+    return fallback.group(1) if fallback else None
+
+
 def normalize_douyin_url(url: str) -> str:
-    """Return canonical URL; short links (v.douyin.com) are resolved by yt-dlp."""
-    return url.strip()
+    """Return canonical share URL when video id is present in the link."""
+    url = url.strip()
+    video_id = extract_douyin_video_id(url)
+    if video_id:
+        return f"https://www.iesdouyin.com/share/video/{video_id}/"
+    return url
 
 
 def _cookies_search_paths() -> list[Path]:

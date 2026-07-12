@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import subprocess
 import tempfile
 from pathlib import Path
 from typing import Callable, Optional
@@ -11,10 +12,11 @@ from typing import Callable, Optional
 import yt_dlp
 from yt_dlp.networking.impersonate import ImpersonateTarget
 
-from config import resolve_ffmpeg_dir, resolve_proxy
+from config import resolve_ffmpeg, resolve_ffmpeg_dir, resolve_proxy
 from models.summary_schemas import TranscriptSegment
 from services.bilibili_helper import DEFAULT_UA, apply_bilibili_patch, is_bilibili_url, warmup_bilibili_cookies
 from services.douyin_helper import apply_douyin_opts, is_douyin_url, normalize_douyin_url
+from services.douyin_parser import DouyinParser
 from services.youtube_helper import apply_youtube_opts, is_youtube_url, normalize_youtube_url
 
 # 非文本字幕轨道，不能用于 AI 总结
@@ -72,6 +74,7 @@ class SummaryYtdlpHelper:
     def __init__(self):
         apply_bilibili_patch()
         self._temp_cookies: list[str] = []
+        self._douyin = DouyinParser()
 
     def _cleanup_temp_cookies(self):
         for path in self._temp_cookies:
@@ -121,6 +124,13 @@ class SummaryYtdlpHelper:
 
     def extract_basic_info(self, url: str) -> dict:
         url = self._prepare_url(url)
+        if is_douyin_url(url):
+            parsed = self._douyin.parse_url(url)
+            return {
+                "title": parsed.title,
+                "duration": parsed.duration,
+                "webpage_url": parsed.webpage_url,
+            }
         self._cleanup_temp_cookies()
         opts = self._build_opts(url, skip_download=True)
         try:
@@ -193,8 +203,49 @@ class SummaryYtdlpHelper:
         finally:
             self._cleanup_temp_cookies()
 
+    def _download_douyin_audio(self, url: str, output_dir: Path) -> Path:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        video_dir = output_dir / "_douyin_video"
+        if video_dir.exists():
+            for child in video_dir.iterdir():
+                if child.is_file():
+                    child.unlink()
+        else:
+            video_dir.mkdir(parents=True, exist_ok=True)
+
+        _, video_path = self._douyin.download_to(url, video_dir)
+        video_file = Path(video_path)
+        audio_path = output_dir / "audio.mp3"
+        ffmpeg = resolve_ffmpeg()
+        if ffmpeg:
+            result = subprocess.run(
+                [
+                    ffmpeg,
+                    "-y",
+                    "-i",
+                    str(video_file),
+                    "-vn",
+                    "-acodec",
+                    "libmp3lame",
+                    "-ab",
+                    "128k",
+                    str(audio_path),
+                ],
+                capture_output=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+            if result.returncode != 0:
+                raise RuntimeError(
+                    f"抖音音频提取失败: {result.stderr[-500:] if result.stderr else 'unknown'}"
+                )
+            return audio_path
+        return video_file
+
     def download_audio(self, url: str, output_dir: Path) -> Path:
         url = self._prepare_url(url)
+        if is_douyin_url(url):
+            return self._download_douyin_audio(url, output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         outtmpl = str(output_dir / "audio.%(ext)s")
         self._cleanup_temp_cookies()

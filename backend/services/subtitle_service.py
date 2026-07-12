@@ -84,11 +84,7 @@ class SubtitleService:
     def _fetch_douyin(
         self, url: str, work: Path, on_progress: ProgressCallback
     ) -> tuple[list[TranscriptSegment], str]:
-        report_progress(on_progress, 15.0, "正在通过 yt-dlp 获取字幕…")
-        try:
-            return self._ytdlp.fetch_subtitles_via_ytdlp(url), "ytdlp"
-        except Exception as exc:
-            logger.warning("Douyin yt-dlp subtitle failed: %s", exc)
+        # 抖音精选/分享页链接 yt-dlp 不支持，统一走 DouyinParser + Whisper
         return self._transcribe_from_audio(url, work, on_progress)
 
     def _transcribe_from_audio(

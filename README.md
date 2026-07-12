@@ -1,24 +1,27 @@
 # 万能视频下载网站
 
-基于 [yt-dlp](https://github.com/yt-dlp/yt-dlp) + FastAPI + Vue 3 的万能视频下载工具，支持 YouTube、B站、TikTok 等 1000+ 平台。
+基于 [yt-dlp](https://github.com/yt-dlp/yt-dlp) + FastAPI + Vue 3 + DeepSeek 的万能视频下载与 AI 分析工具。
 
 ## 功能
 
-- 粘贴视频链接，一键解析
-- 选择清晰度/格式
-- 下载到本地（支持手机浏览器）
-- 响应式 UI，参考 [codefather painting](https://ai.codefather.cn/painting) 设计风格
+- 粘贴视频链接，一键解析与下载（YouTube、B站、抖音等）
+- 选择清晰度/格式，下载到本地
+- **AI 视频总结**：摘要、要点、章节大纲
+- **四页签结果**：总结摘要 · 字幕文本 · 思维导图 · AI 问答
+- 总结结果支持复制 Markdown / 另存为 `.md`
+- 响应式 UI，移动端友好
 
 ## 快速开始
 
-### 方式一：本地开发
+### 本地开发
 
 **后端**
 
 ```bash
 cd backend
 pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
+# 配置 backend/.env：DEEPSEEK_API_KEY=sk-xxx
+py -m uvicorn main:app --reload --port 8000
 ```
 
 **前端**
@@ -31,50 +34,45 @@ npm run dev
 
 访问 http://localhost:3000
 
-### 方式二：Docker Compose
+### Docker Compose
 
 ```bash
 docker compose up -d --build
 ```
 
 - 前端：http://localhost:3000
-- 后端 API：http://localhost:8000
-- API 文档：http://localhost:8000/docs
+- 后端 API：http://localhost:8000/docs
 
 ## 项目结构
 
 ```
-├── docs/                  # 需求 & 设计 & 总结文档
-│   ├── requirements.md
-│   ├── design.md
-│   └── summary.md         # 项目总结（MVP 交付沉淀）
-├── backend/               # FastAPI + yt-dlp
+├── docs/                  # 需求、设计、总结文档
+│   └── summary.md         # 完整项目总结（推荐阅读）
+├── backend/               # FastAPI + yt-dlp + AI 总结
 ├── frontend/              # Vue 3 + Tailwind CSS
 └── docker-compose.yml
 ```
 
 ## 环境变量
 
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| `DOWNLOAD_DIR` | `./downloads` | 临时下载目录 |
-| `MAX_CONCURRENT` | `3` | 最大并发下载 |
-| `FILE_TTL_SECONDS` | `7200` | 文件保留 2 小时 |
-| `CORS_ORIGINS` | `*` | 跨域来源 |
+| 变量 | 说明 |
+|------|------|
+| `DEEPSEEK_API_KEY` | AI 总结/思维导图/问答必需（`backend/.env`） |
+| `DOWNLOAD_DIR` | 临时下载目录（默认 `./downloads`） |
+| `MAX_CONCURRENT` | 最大并发下载（默认 3） |
+| `YTDLP_PROXY` | 代理（YouTube 等受限网络） |
+
+完整配置见 [docs/summary.md](docs/summary.md)。
 
 ## 注意事项
 
 - 本工具仅供个人学习研究，请尊重视频版权
-- 部分平台可能限制下载，属正常现象
+- B站高清下载需 ffmpeg；Docker 镜像已包含
+- 无字幕视频首次总结会下载 Whisper 模型，可能较慢
 - 临时文件 2 小时后自动清理
-- **B站下载**：服务端需安装 ffmpeg 才能合并高清视频（音频可直接下载）；Docker 镜像已包含 ffmpeg
-- 本地开发可执行：`pip install imageio-ffmpeg` 或 `winget install Gyan.FFmpeg`
 
-## 后续规划
+## 文档
 
-- [ ] 批量下载
-- [ ] 字幕 / 音频提取
-- [ ] AI 视频总结
-- [ ] 付费会员
-
-详见 [docs/requirements.md](docs/requirements.md) 和 [docs/design.md](docs/design.md)。
+- [项目总结](docs/summary.md) — 架构、功能、踩坑、测试
+- [需求分析](docs/requirements.md)
+- [方案设计](docs/design.md)

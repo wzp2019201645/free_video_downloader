@@ -81,6 +81,15 @@ def test_whisper_return_shape():
     print("[OK] whisper return shape test passed")
 
 
+def test_normalize_douyin_modal_url():
+    from services.douyin_helper import extract_douyin_video_id, normalize_douyin_url
+
+    url = "https://www.douyin.com/jingxuan/knowledge?modal_id=7636306372904209702"
+    assert extract_douyin_video_id(url) == "7636306372904209702"
+    assert normalize_douyin_url(url) == "https://www.iesdouyin.com/share/video/7636306372904209702/"
+    print("[OK] douyin modal url normalize test passed")
+
+
 def test_summary_routes_registered():
     from main import app
 
@@ -97,5 +106,6 @@ if __name__ == "__main__":
     test_parse_deepseek_json()
     test_subtitle_service_supported_urls()
     test_whisper_return_shape()
+    test_normalize_douyin_modal_url()
     test_summary_routes_registered()
     print("\nAll summary unit tests passed!")
