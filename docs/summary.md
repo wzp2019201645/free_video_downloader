@@ -1,6 +1,6 @@
 # 万能视频下载 — 项目总结
 
-> 版本：v2.0 | 更新日期：2026-07-12 | 状态：下载 MVP + AI 总结/思维导图/问答 已交付
+> 版本：v2.1 | 更新日期：2026-07-19 | 状态：下载 MVP + AI 总结/导图导出/字幕简体与下载 已交付
 
 ## 1. 项目概述
 
@@ -10,8 +10,8 @@
 
 1. **解析并下载**视频（多平台、多清晰度）
 2. **AI 视频总结**（摘要、要点、章节大纲）
-3. **字幕/转录**查看与复制
-4. **思维导图**自动生成
+3. **字幕/转录**查看、复制，以及下载 SRT / TXT（统一简体中文）
+4. **思维导图** markmap 经典展示，支持导出 SVG / 高清 PNG
 5. **AI 问答**基于视频内容多轮对话
 
 核心定位：轻量、无数据库、临时文件模式，下载 + AI 分析同站完成，适合个人学习研究场景。
@@ -22,7 +22,8 @@
 |------|-------------------|--------|
 | 视频下载 | 弱或无 | ✅ 核心能力 |
 | AI 总结 | ✅ | ✅ |
-| 思维导图 | ✅ | ✅ |
+| 思维导图 | ✅ | ✅ markmap + SVG/PNG 导出 |
+| 字幕下载 | 常见 SRT | ✅ SRT / TXT（简体） |
 | AI 问答 | ✅ | ✅ |
 | 同页完成下载+总结 | 通常分离 | ✅ |
 
@@ -46,10 +47,11 @@
 |------|------|----------|
 | 1 | 创建总结 | `POST /api/summary`，返回 `task_id` |
 | 2 | 字幕获取 | B站 API → yt-dlp → Whisper ASR 三级兜底 |
-| 3 | AI 分析 | DeepSeek 生成结构化 JSON（摘要/要点/章节/标签） |
-| 4 | 进度轮询 | `GET /api/summary/tasks/{task_id}` |
-| 5 | 结果展示 | 四页签：总结摘要 / 字幕文本 / 思维导图 / AI 问答 |
-| 6 | 本地保存 | 复制 Markdown、另存为 `.md` 文件 |
+| 3 | 简体规范化 | OpenCC `t2s` 统一繁→简；Whisper 默认 `base` + 简体 `initial_prompt` |
+| 4 | AI 分析 | DeepSeek 生成结构化 JSON（摘要/要点/章节/标签） |
+| 5 | 进度轮询 | `GET /api/summary/tasks/{task_id}` |
+| 6 | 结果展示 | 四页签：总结摘要 / 字幕文本 / 思维导图 / AI 问答 |
+| 7 | 本地保存 | 复制 Markdown、另存为 `.md`；字幕页导出 SRT / TXT |
 
 **支持平台（总结）：** B站、抖音（含精选页 `modal_id` 链接）
 
@@ -58,20 +60,23 @@
 ```
 B站：官方字幕 API → yt-dlp 字幕 → Whisper 语音识别
 抖音：DouyinParser 下载音频 → Whisper 语音识别
+（入库前统一 OpenCC 繁体 → 简体）
 ```
 
 ### 2.3 思维导图 & AI 问答（第二期扩展）
 
-| 功能 | API | 说明 |
-|------|-----|------|
-| 思维导图 | `POST /api/summary/mindmap` | 基于已完成总结，DeepSeek 生成树形结构，服务端缓存 |
+| 功能 | API / 实现 | 说明 |
+|------|------------|------|
+| 思维导图 | `POST /api/summary/mindmap` | DeepSeek 生成树形 JSON，服务端缓存 |
+| 导图展示 | 前端 markmap | 经典中心分支连线，支持缩放/平移 |
+| 导图导出 | 前端 `mindmapExport.js` | 下载 SVG；Canvas 3x 高清 PNG（纯 SVG 路径，兼容 foreignObject） |
 | AI 问答 | `POST /api/summary/chat` | 传入 `task_id` + 问题 + 历史，基于视频上下文回答 |
 
 前端四页签组件：
 
 - `SummaryOverviewTab` — 摘要、要点、章节、复制/保存
-- `TranscriptTab` — 全文转录、复制
-- `MindMapTab` — 自动生成思维导图树
+- `TranscriptTab` — 全文转录、复制、下载 SRT / TXT
+- `MindMapTab` — markmap 渲染 + SVG/PNG 导出
 - `ChatTab` — 多轮对话界面
 
 ### 2.4 平台适配
@@ -108,6 +113,8 @@ FastAPI 后端
     ├── summary_executor.py        — 独立线程池（避免阻塞解析）
     └── services/
         ├── subtitle_service.py    — 字幕编排（平台 API → yt-dlp → ASR）
+        ├── text_normalize.py      — OpenCC 繁→简
+        ├── asr_service.py         — faster-whisper（默认 base）
         ├── deepseek_service.py    — DeepSeek 总结
         ├── mindmap_service.py     — DeepSeek 思维导图
         ├── summary_chat_service.py— DeepSeek 问答
@@ -115,7 +122,7 @@ FastAPI 后端
         └── bilibili_subtitle.py   — B站字幕 API
             │
             ▼
-    yt-dlp / requests / faster-whisper / DeepSeek API
+    yt-dlp / requests / faster-whisper / OpenCC / DeepSeek API
 ```
 
 ### 开闭原则（OCP）实践
@@ -173,7 +180,8 @@ free_video_downloader/
 │   │   ├── bilibili_helper.py
 │   │   ├── bilibili_subtitle.py
 │   │   ├── subtitle_service.py
-│   │   ├── asr_service.py           # faster-whisper
+│   │   ├── asr_service.py           # faster-whisper（默认 base）
+│   │   ├── text_normalize.py        # OpenCC 繁→简
 │   │   ├── deepseek_service.py
 │   │   ├── mindmap_service.py
 │   │   ├── summary_chat_service.py
@@ -182,6 +190,7 @@ free_video_downloader/
 │   │   └── summary_ytdlp.py
 │   ├── test_unit.py
 │   ├── test_summary_unit.py
+│   ├── test_text_normalize_integration.py
 │   └── test_summary_extended_unit.py
 ├── frontend/
 │   └── src/
@@ -190,16 +199,20 @@ free_video_downloader/
 │       │   ├── client.js
 │       │   ├── summaryClient.js
 │       │   └── summaryExtendedClient.js
+│       ├── utils/
+│       │   ├── downloadBlob.js      # 通用文件下载
+│       │   ├── subtitleExport.js    # SRT / TXT 生成
+│       │   ├── mindmapMarkdown.js   # 树 → markmap Markdown
+│       │   └── mindmapExport.js     # SVG/PNG 可靠导出
 │       └── components/
 │           ├── VideoResult.vue
 │           └── summary/
 │               ├── SummaryPanel.vue       # 原版（保留）
 │               ├── SummaryPanelTabs.vue   # 四页签版（当前使用）
-│               ├── MindMapTree.vue
 │               └── tabs/
 │                   ├── SummaryOverviewTab.vue
 │                   ├── TranscriptTab.vue
-│                   ├── MindMapTab.vue
+│                   ├── MindMapTab.vue     # markmap + 导出
 │                   └── ChatTab.vue
 ├── docker-compose.yml
 └── README.md
@@ -246,7 +259,7 @@ npm run dev
 | `DEEPSEEK_API_KEY` | — | **AI 总结必需**，不可提交 Git |
 | `DEEPSEEK_BASE_URL` | `https://api.deepseek.com` | DeepSeek API 地址 |
 | `DEEPSEEK_MODEL` | `deepseek-chat` | 模型名称 |
-| `WHISPER_MODEL_SIZE` | `tiny` | ASR 模型（tiny/base/small） |
+| `WHISPER_MODEL_SIZE` | `base` | ASR 模型（tiny/base/small）；base 更准、首次下载更大 |
 | `HF_ENDPOINT` | `https://hf-mirror.com` | HuggingFace 镜像（国内） |
 | `SUMMARY_MAX_CONCURRENT` | `2` | 最大并发总结任务 |
 | `SUMMARY_MAX_DURATION_SECONDS` | `5400` | 总结视频时长上限（90 分钟） |
@@ -275,6 +288,8 @@ npm run dev
 8. **yt-dlp 误把弹幕当字幕**：过滤 `danmaku` 等非文本轨道
 9. **抖音总结 Unsupported URL**：总结流程改用 `DouyinParser`，不走 yt-dlp
 10. **Windows ffmpeg 子进程**：`subprocess` 使用 `encoding=utf-8, errors=replace`
+11. **字幕繁体不便阅读**：入库前 OpenCC `t2s`；Whisper 加简体 `initial_prompt`
+12. **思维导图导出无反应**：markmap 使用 `foreignObject`，`html-to-image` 易静默失败 → 导出前转为纯 SVG `<text>`，PNG 走 Canvas 3x；优先 `showSaveFilePicker` 保留用户手势
 
 ---
 
@@ -284,7 +299,8 @@ npm run dev
 |------|------|
 | `test_unit.py` | 下载核心单元测试 |
 | `test_bilibili.py` | B站解析集成测试 |
-| `test_summary_unit.py` | 总结模块单元测试 |
+| `test_summary_unit.py` | 总结模块单元测试（含简繁转换、Whisper 默认模型） |
+| `test_text_normalize_integration.py` | 字幕 fetch 路径繁→简 |
 | `test_summary_extended_unit.py` | 思维导图/问答路由注册 |
 | `test_parse_integration.py` | 总结进行中解析不阻塞 |
 
@@ -301,10 +317,10 @@ npm run dev
 |------|------|
 | 批量下载 | 多行 URL 队列 |
 | 更多平台总结 | YouTube 等 |
-| 思维导图导出 | PNG / Markdown |
+| 思维导图导出 Markdown | PNG/SVG 已交付，可再补 `.md` |
 | 问答流式输出 | SSE 打字机效果 |
+| 字幕跨语种翻译 | 当前仅繁→简 |
 | 付费会员 | Pro 功能 gating |
-| 推送远程 | 网络恢复后 `git push origin master` |
 
 ---
 

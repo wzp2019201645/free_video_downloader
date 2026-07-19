@@ -14,6 +14,7 @@ from services.bilibili_subtitle import fetch_bilibili_subtitles
 from services.douyin_helper import is_douyin_url
 from services.summary_progress import ProgressCallback, report_progress
 from services.summary_ytdlp import SummaryYtdlpHelper
+from services.text_normalize import normalize_segments
 from summary_config import SUMMARY_DIR
 
 logger = logging.getLogger(__name__)
@@ -58,6 +59,7 @@ class SubtitleService:
 
         if not segments:
             raise RuntimeError("未能获取任何字幕或转录文本")
+        segments = normalize_segments(segments)
         report_progress(on_progress, 50.0, "字幕/转录获取完成")
         return SubtitleFetchResult(
             segments=segments,

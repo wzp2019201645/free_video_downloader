@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from functools import lru_cache
 from pathlib import Path
 
@@ -11,6 +12,12 @@ from services.summary_progress import ProgressCallback, report_progress
 from summary_config import WHISPER_COMPUTE_TYPE, WHISPER_DEVICE, WHISPER_MODEL_SIZE
 
 logger = logging.getLogger(__name__)
+
+# Ensure mirror / disable XET before huggingface_hub is imported by faster-whisper
+os.environ.setdefault("HF_ENDPOINT", os.getenv("HF_ENDPOINT", "https://hf-mirror.com"))
+os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
+os.environ.setdefault("HF_HUB_ENABLE_HF_TRANSFER", "0")
+
 
 @lru_cache(maxsize=1)
 def _get_model():
@@ -41,6 +48,7 @@ def transcribe_audio(
         beam_size=5,
         language="zh",
         vad_filter=True,
+        initial_prompt="以下是简体中文普通话的字幕。",
     )
     logger.info(
         "Whisper detected language=%s prob=%.2f duration=%.1fs",

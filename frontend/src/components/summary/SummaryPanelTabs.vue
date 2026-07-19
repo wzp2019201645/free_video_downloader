@@ -71,6 +71,7 @@
             v-show="activeTab === 'mindmap'"
             :task-id="taskId"
             :active="activeTab === 'mindmap'"
+            :title="result?.title || title"
           />
 
           <ChatTab

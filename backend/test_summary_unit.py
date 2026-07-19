@@ -99,6 +99,29 @@ def test_summary_routes_registered():
     print("[OK] summary routes registered test passed")
 
 
+def test_traditional_to_simplified():
+    from services.text_normalize import normalize_segments, to_simplified
+
+    assert to_simplified("繁體中文測試") == "繁体中文测试"
+    assert to_simplified("簡體已經是簡體") == "简体已经是简体"
+    segs = normalize_segments(
+        [
+            TranscriptSegment(start=0, end=1, text="這是繁體字幕"),
+            TranscriptSegment(start=1, end=2, text="Hello"),
+        ]
+    )
+    assert segs[0].text == "这是繁体字幕"
+    assert segs[1].text == "Hello"
+    print("[OK] traditional to simplified test passed")
+
+
+def test_whisper_default_model_is_base():
+    from summary_config import WHISPER_MODEL_SIZE
+
+    assert WHISPER_MODEL_SIZE == "base"
+    print("[OK] whisper default model is base")
+
+
 if __name__ == "__main__":
     test_parse_bilibili_subtitle_json()
     test_parse_vtt()
@@ -108,4 +131,6 @@ if __name__ == "__main__":
     test_whisper_return_shape()
     test_normalize_douyin_modal_url()
     test_summary_routes_registered()
+    test_traditional_to_simplified()
+    test_whisper_default_model_is_base()
     print("\nAll summary unit tests passed!")

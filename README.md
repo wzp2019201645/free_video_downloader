@@ -8,6 +8,8 @@
 - 选择清晰度/格式，下载到本地
 - **AI 视频总结**：摘要、要点、章节大纲
 - **四页签结果**：总结摘要 · 字幕文本 · 思维导图 · AI 问答
+- **思维导图**：markmap 经典导图展示，支持下载 SVG / 高清 PNG
+- **字幕**：统一简体中文；支持下载 SRT / TXT
 - 总结结果支持复制 Markdown / 另存为 `.md`
 - 响应式 UI，移动端友好
 
@@ -58,6 +60,7 @@ docker compose up -d --build
 | 变量 | 说明 |
 |------|------|
 | `DEEPSEEK_API_KEY` | AI 总结/思维导图/问答必需（`backend/.env`） |
+| `WHISPER_MODEL_SIZE` | ASR 模型，默认 `base`（可改为 `tiny`/`small`） |
 | `DOWNLOAD_DIR` | 临时下载目录（默认 `./downloads`） |
 | `MAX_CONCURRENT` | 最大并发下载（默认 3） |
 | `YTDLP_PROXY` | 代理（YouTube 等受限网络） |
@@ -68,7 +71,7 @@ docker compose up -d --build
 
 - 本工具仅供个人学习研究，请尊重视频版权
 - B站高清下载需 ffmpeg；Docker 镜像已包含
-- 无字幕视频首次总结会下载 Whisper 模型，可能较慢
+- 无字幕视频首次总结会下载 Whisper `base` 模型，可能较慢
 - 临时文件 2 小时后自动清理
 
 ## 文档
