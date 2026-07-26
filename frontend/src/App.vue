@@ -9,17 +9,24 @@
         @parse="handleParse"
       />
 
-      <VideoResult
-        v-if="videoInfo"
-        :video="videoInfo"
-        :url="currentUrl"
-      />
-
-      <SummaryPanelTabs
-        v-if="videoInfo"
-        :url="currentUrl"
-        :title="videoInfo.title"
-      />
+      <section v-if="videoInfo" class="max-w-6xl mx-auto px-4 pb-8">
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-5">
+          <div class="lg:col-span-2 min-w-0">
+            <VideoResult
+              :video="videoInfo"
+              :url="currentUrl"
+              embedded
+            />
+          </div>
+          <div class="lg:col-span-3 min-w-0">
+            <SummaryPanelTabs
+              :url="currentUrl"
+              :title="videoInfo.title"
+              embedded
+            />
+          </div>
+        </div>
+      </section>
 
       <PlatformGrid v-if="!videoInfo" />
     </main>

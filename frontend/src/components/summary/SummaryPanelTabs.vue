@@ -1,14 +1,17 @@
 <template>
-  <section class="px-4 pb-8">
-    <div class="max-w-3xl mx-auto">
-      <div class="card p-5 sm:p-6">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+  <component :is="embedded ? 'div' : 'section'" :class="embedded ? '' : 'px-4 pb-8'">
+    <div :class="embedded ? '' : 'max-w-3xl mx-auto'">
+      <div
+        class="card p-4 sm:p-5"
+        :class="embedded ? 'min-h-[28rem] flex flex-col' : ''"
+      >
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div>
             <h3 class="text-base font-bold text-gray-900">AI 视频总结</h3>
             <p class="text-xs text-gray-500 mt-1">总结摘要 · 字幕文本 · 思维导图 · AI 问答</p>
           </div>
           <button
-            class="btn-primary px-6 py-2.5 text-sm shrink-0"
+            class="btn-primary px-5 py-2 text-sm shrink-0"
             :disabled="summarizing || !url"
             @click="handleSummary"
           >
@@ -38,7 +41,16 @@
           <p class="text-sm text-red-600">{{ error }}</p>
         </div>
 
-        <div v-if="result">
+        <div
+          v-if="!result && !summarizing && !error"
+          class="flex-1 flex items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/50 px-4 py-10"
+        >
+          <p class="text-sm text-gray-400 text-center">
+            点击右上角按钮，生成视频摘要、字幕、思维导图与问答
+          </p>
+        </div>
+
+        <div v-if="result" class="flex-1 min-h-0">
           <div class="flex flex-wrap gap-1 p-1 mb-5 rounded-xl bg-gray-100">
             <button
               v-for="tab in tabs"
@@ -81,7 +93,7 @@
         </div>
       </div>
     </div>
-  </section>
+  </component>
 </template>
 
 <script setup>
@@ -99,6 +111,7 @@ import ChatTab from './tabs/ChatTab.vue'
 const props = defineProps({
   url: { type: String, required: true },
   title: { type: String, default: '' },
+  embedded: { type: Boolean, default: false },
 })
 
 const tabs = [

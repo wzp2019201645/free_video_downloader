@@ -1,79 +1,66 @@
 <template>
-  <section class="px-4 pb-8">
-    <div class="max-w-3xl mx-auto">
-      <div class="card p-5 sm:p-6">
-        <!-- 视频信息 -->
-        <div class="flex flex-col sm:flex-row gap-5">
-          <div class="shrink-0 mx-auto sm:mx-0">
-            <img
-              v-if="thumbnailSrc"
-              :src="thumbnailSrc"
-              :alt="video.title"
-              class="w-full sm:w-48 h-auto rounded-lg object-cover aspect-video bg-gray-100"
-              @error="onThumbnailError"
-            />
-            <div v-else class="w-full sm:w-48 aspect-video rounded-lg bg-gray-100 flex items-center justify-center">
-              <svg class="w-12 h-12 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/>
-              </svg>
-            </div>
-          </div>
-          <div class="flex-1 min-w-0">
-            <h2 class="text-lg font-bold text-gray-900 line-clamp-2 mb-2">{{ video.title }}</h2>
-            <div class="flex flex-wrap gap-2 mb-4">
-              <span v-if="video.uploader" class="tag"># {{ video.uploader }}</span>
-              <span v-if="video.duration" class="tag"># {{ formatDuration(video.duration) }}</span>
-              <span class="tag"># {{ video.formats.length }} 种格式</span>
-            </div>
+  <component :is="embedded ? 'div' : 'section'" :class="embedded ? '' : 'px-4 pb-8'">
+    <div :class="embedded ? '' : 'max-w-3xl mx-auto'">
+      <div class="card p-4 sm:p-5">
+        <!-- 封面预览 -->
+        <div class="w-full">
+          <img
+            v-if="thumbnailSrc"
+            :src="thumbnailSrc"
+            :alt="video.title"
+            class="w-full h-auto rounded-lg object-cover aspect-video bg-gray-100"
+            @error="onThumbnailError"
+          />
+          <div
+            v-else
+            class="w-full aspect-video rounded-lg bg-gray-100 flex items-center justify-center"
+          >
+            <svg class="w-12 h-12 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/>
+            </svg>
           </div>
         </div>
 
-        <!-- 格式选择 -->
-        <div class="mt-6">
-          <h3 class="text-sm font-semibold text-gray-700 mb-3">选择清晰度 / 格式</h3>
-          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            <button
+        <!-- 标题与元信息 -->
+        <div class="mt-4">
+          <h2 class="text-base font-bold text-gray-900 line-clamp-2 mb-2">{{ video.title }}</h2>
+          <div class="flex flex-wrap gap-x-2 gap-y-1">
+            <span v-if="video.uploader" class="tag"># {{ video.uploader }}</span>
+            <span v-if="video.duration" class="tag"># {{ formatDuration(video.duration) }}</span>
+            <span class="tag"># {{ video.formats.length }} 种格式</span>
+          </div>
+        </div>
+
+        <!-- 紧凑清晰度选择 -->
+        <div class="mt-4">
+          <label class="block text-xs font-semibold text-gray-700 mb-1.5" for="format-select">
+            清晰度 / 格式
+          </label>
+          <select
+            id="format-select"
+            v-model="selectedFormat"
+            class="w-full rounded-xl border border-gray-200 bg-gray-50/80 px-3 py-2.5 text-sm text-gray-900
+                   focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+          >
+            <option
               v-for="fmt in video.formats"
               :key="fmt.format_id"
-              class="relative p-3 rounded-xl border-2 text-left transition-all duration-150"
-              :class="selectedFormat === fmt.format_id
-                ? 'border-primary bg-primary-light'
-                : 'border-gray-100 hover:border-gray-200 bg-gray-50/50'"
-              @click="selectedFormat = fmt.format_id"
+              :value="fmt.format_id"
             >
-              <div class="font-semibold text-sm text-gray-900">{{ fmt.quality }}</div>
-              <div class="text-xs text-gray-500 mt-0.5">
-                .{{ fmt.ext }}
-                <span v-if="fmt.filesize"> · {{ formatSize(fmt.filesize) }}</span>
-              </div>
-              <div
-                v-if="selectedFormat === fmt.format_id"
-                class="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center"
-              >
-                <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                </svg>
-              </div>
-            </button>
-          </div>
+              {{ fmt.quality }} · .{{ fmt.ext }}<template v-if="fmt.filesize"> · {{ formatSize(fmt.filesize) }}</template>
+            </option>
+          </select>
         </div>
 
         <!-- 下载按钮 -->
-        <div class="mt-6 flex flex-col sm:flex-row gap-3">
+        <div class="mt-4">
           <button
-            class="btn-primary flex-1 py-3 text-base"
+            class="btn-primary w-full py-2.5 text-sm"
             :disabled="!selectedFormat || downloading"
             @click="handleDownload"
           >
             <span v-if="downloading">下载中 {{ progress }}%</span>
             <span v-else>下载到本地</span>
-          </button>
-          <button
-            class="px-6 py-3 rounded-full border border-gray-200 text-gray-500 text-sm
-                   hover:bg-gray-50 transition-colors opacity-50 cursor-not-allowed"
-            title="即将上线（第二期）"
-          >
-            AI 总结
           </button>
         </div>
 
@@ -91,7 +78,7 @@
         />
       </div>
     </div>
-  </section>
+  </component>
 </template>
 
 <script setup>
@@ -102,6 +89,7 @@ import DownloadProgress from './DownloadProgress.vue'
 const props = defineProps({
   video: { type: Object, required: true },
   url: { type: String, required: true },
+  embedded: { type: Boolean, default: false },
 })
 
 const selectedFormat = ref(

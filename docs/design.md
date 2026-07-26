@@ -1,6 +1,6 @@
 # 万能视频下载网站 — 方案设计文档
 
-> 版本：v1.0 | 更新日期：2026-06-21
+> 版本：v1.1 | 更新日期：2026-07-26
 
 ## 1. 架构概览
 
@@ -165,12 +165,44 @@ class TaskManager:
 App.vue
 ├── AppHeader.vue          # 导航栏（Logo + Pro 预留）
 ├── HeroSection.vue        # 大标题 + URL 输入
-├── VideoResult.vue        # 解析结果（封面 + 格式选择 + 下载）
-├── PlatformGrid.vue       # 支持平台卡片网格
+├── 同屏工作区（解析后，桌面 lg 双栏 / 移动单列）
+│   ├── VideoResult.vue        # 左：封面 + 紧凑清晰度 + 下载
+│   └── SummaryPanelTabs.vue   # 右：AI 四页签（手动触发总结）
+├── PlatformGrid.vue       # 支持平台卡片网格（未解析时）
 ├── DownloadProgress.vue   # 进度条组件
 ├── AppFooter.vue          # 版权提示
 └── api/client.js          # Axios 封装
 ```
+
+### 4.4 解析后同屏双栏布局（v1.1）
+
+目标：解析成功后，用户在同一视口内同时看到「视频信息/下载」与「AI 总结」，减少上下滚动与二次跳转感。
+
+```
+HeroSection（URL 解析）
+        │
+        ▼ 解析成功
+┌──────────────────── max-w-6xl 同屏工作区 ────────────────────┐
+│  lg:grid-cols-5                                              │
+│  ┌─────────── 左 col-span-2 ───────────┐  ┌── 右 col-span-3 ──┐ │
+│  │ VideoResult (embedded)              │  │ SummaryPanelTabs   │ │
+│  │ · 全宽封面 aspect-video             │  │   (embedded)       │ │
+│  │ · 标题 / 上传者 / 时长              │  │ · 开始 AI 总结     │ │
+│  │ · select 紧凑选清晰度               │  │ · 四页签结果区     │ │
+│  │ · 下载到本地 + DownloadProgress     │  │ · min-h 空态占位   │ │
+│  └─────────────────────────────────────┘  └────────────────────┘ │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+| 项 | 约定 |
+|----|------|
+| 桌面（≥ `lg`） | 左约 40% / 右约 60%，左右并排 |
+| 移动（小于 `lg`） | 单列堆叠：上信息下载、下总结 |
+| `embedded` prop | 子组件去掉各自 `section` / `max-w-3xl`，由 App 统一包一层，避免双层宽度与 padding |
+| 左侧下载 | 信息为主；清晰度用 `select` 压缩高度；下载逻辑不变 |
+| 右侧总结 | **手动**「开始 AI 总结 / 重新总结」；本期不做解析后自动总结 |
+| 状态隔离 | 下载状态在 `VideoResult`，总结状态在 `SummaryPanelTabs`；换 URL 时总结 `watch(url)` 重置 |
+| 移除 | 左侧原 disabled「AI 总结」占位按钮（避免与右侧真实入口混淆） |
 
 ## 5. UI 设计规范
 
@@ -186,6 +218,7 @@ App.vue
 | 标题字号 | Hero `2.5rem`，卡片 `1rem` |
 | 标签 | `#标签名`，灰色小字 |
 | 断点 | `sm:640px`, `md:768px`, `lg:1024px` |
+| 工作区宽度 | 解析后同屏区 `max-w-6xl`（Hero 仍 `max-w-3xl` 居中） |
 
 ### Hero 文案
 
@@ -222,10 +255,13 @@ free_video_downloader/
 │       └── components/
 │           ├── AppHeader.vue
 │           ├── HeroSection.vue
-│           ├── VideoResult.vue
+│           ├── VideoResult.vue      # 同屏左栏：封面 + 紧凑下载
 │           ├── PlatformGrid.vue
 │           ├── DownloadProgress.vue
-│           └── AppFooter.vue
+│           ├── AppFooter.vue
+│           └── summary/
+│               ├── SummaryPanelTabs.vue   # 同屏右栏：AI 四页签
+│               └── tabs/                  # 摘要 / 字幕 / 导图 / 问答
 ├── docker-compose.yml
 ├── Dockerfile.backend
 ├── Dockerfile.frontend
@@ -234,16 +270,17 @@ free_video_downloader/
 
 ## 7. 扩展预留
 
-### 7.1 AI 视频总结（第二期）
+### 7.1 AI 视频总结（第二期 — 已交付）
 
 ```
 POST /api/summary
-Body: { "task_id": "abc123" }  或  { "url": "..." }
-Response: { "summary": "...", "chapters": [...] }
+Body: { "url": "..." }
+Response: { "task_id": "..." }
 ```
 
-- 下载完成后提取音频 → Whisper 转文字 → LLM 总结
-- 前端 VideoResult 组件预留「AI 总结」按钮位（disabled）
+- 字幕三级兜底（平台 API → yt-dlp → Whisper）→ DeepSeek 结构化总结；导图 / 问答见扩展路由
+- 前端：同屏右侧 `SummaryPanelTabs`「开始 AI 总结」手动触发；与左栏下载并行互不阻塞
+- 后续可选：解析成功后自动发起总结（仅支持平台）
 
 ### 7.2 付费会员（第三期）
 

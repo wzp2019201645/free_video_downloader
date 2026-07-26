@@ -1,6 +1,6 @@
 # 万能视频下载 — 项目总结
 
-> 版本：v2.1 | 更新日期：2026-07-19 | 状态：下载 MVP + AI 总结/导图导出/字幕简体与下载 已交付
+> 版本：v2.2 | 更新日期：2026-07-26 | 状态：下载 MVP + AI 总结 + 解析后同屏双栏布局 已交付
 
 ## 1. 项目概述
 
@@ -25,7 +25,7 @@
 | 思维导图 | ✅ | ✅ markmap + SVG/PNG 导出 |
 | 字幕下载 | 常见 SRT | ✅ SRT / TXT（简体） |
 | AI 问答 | ✅ | ✅ |
-| 同页完成下载+总结 | 通常分离 | ✅ |
+| 同页完成下载+总结 | 通常分离 | ✅ 桌面双栏同屏（左下载 / 右总结） |
 
 ---
 
@@ -91,8 +91,8 @@ B站：官方字幕 API → yt-dlp 字幕 → Whisper 语音识别
 ### 2.5 前端体验
 
 - **UI 风格**：浅灰背景 + 蓝色主色 `#1677FF`，参考 codefather painting
-- **响应式**：移动端单列，桌面端卡片式
-- **组件流**：`HeroSection` → `VideoResult`（下载）→ `SummaryPanelTabs`（AI 四页签）
+- **响应式**：移动端单列堆叠；桌面端解析后为双栏同屏（左约 40% 视频信息/紧凑下载，右约 60% AI 总结四页签）
+- **组件流**：`HeroSection` → 同屏工作区（`VideoResult` + `SummaryPanelTabs`）；总结仍为手动「开始 AI 总结」
 - **保存优化**：Chrome/Edge `showSaveFilePicker` 原生对话框
 
 ---
@@ -205,10 +205,10 @@ free_video_downloader/
 │       │   ├── mindmapMarkdown.js   # 树 → markmap Markdown
 │       │   └── mindmapExport.js     # SVG/PNG 可靠导出
 │       └── components/
-│           ├── VideoResult.vue
+│           ├── VideoResult.vue            # 同屏左栏：封面 + 紧凑清晰度/下载
 │           └── summary/
 │               ├── SummaryPanel.vue       # 原版（保留）
-│               ├── SummaryPanelTabs.vue   # 四页签版（当前使用）
+│               ├── SummaryPanelTabs.vue   # 同屏右栏四页签（手动总结）
 │               └── tabs/
 │                   ├── SummaryOverviewTab.vue
 │                   ├── TranscriptTab.vue
