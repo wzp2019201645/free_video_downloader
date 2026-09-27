@@ -29,6 +29,7 @@
       </section>
 
       <PlatformGrid v-if="!videoInfo" />
+      <SeoGuide />
     </main>
 
     <AppFooter />
@@ -44,6 +45,7 @@ import VideoResult from './components/VideoResult.vue'
 import PlatformGrid from './components/PlatformGrid.vue'
 import AppFooter from './components/AppFooter.vue'
 import SummaryPanelTabs from './components/summary/SummaryPanelTabs.vue'
+import SeoGuide from './components/SeoGuide.vue'
 
 const loading = ref(false)
 const parseError = ref('')

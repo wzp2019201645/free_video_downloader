@@ -1,0 +1,15 @@
+# 允许搜索引擎和 AI 对话抓取公开页面。/api/ 是任务接口，不提供可引用内容。
+User-agent: *
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: PerplexityBot
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: Bytespider
+User-agent: Amazonbot
+User-agent: meta-externalagent
+Allow: /
+Disallow: /api/
