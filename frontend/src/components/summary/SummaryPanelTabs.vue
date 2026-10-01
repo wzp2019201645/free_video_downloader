@@ -11,8 +11,17 @@
             <p class="text-xs text-gray-500 mt-1">总结摘要 · 字幕文本 · 思维导图 · AI 问答</p>
           </div>
           <button
+            v-if="auth.loaded && !isMember"
             class="btn-primary px-5 py-2 text-sm shrink-0"
-            :disabled="summarizing || !url"
+            type="button"
+            @click="openUpgrade"
+          >
+            开通 Pro 后使用
+          </button>
+          <button
+            v-else
+            class="btn-primary px-5 py-2 text-sm shrink-0"
+            :disabled="summarizing || !url || !auth.loaded"
             @click="handleSummary"
           >
             <span v-if="summarizing">{{ statusLabel }} {{ progress.toFixed(0) }}%</span>
@@ -46,7 +55,7 @@
           class="flex-1 flex items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50/50 px-4 py-10"
         >
           <p class="text-sm text-gray-400 text-center">
-            点击右上角按钮，生成视频摘要、字幕、思维导图与问答
+            {{ isMember ? '点击右上角按钮，生成视频摘要、字幕、思维导图与问答' : 'AI 总结、字幕、导图和问答仅 Pro 会员可用。720p 及以下下载仍然免费。' }}
           </p>
         </div>
 
@@ -103,6 +112,7 @@ import {
   getSummaryStatus,
   getStatusLabel,
 } from '../../api/summaryClient'
+import { auth, openAuth, openMembership } from '../../auth/store'
 import SummaryOverviewTab from './tabs/SummaryOverviewTab.vue'
 import TranscriptTab from './tabs/TranscriptTab.vue'
 import MindMapTab from './tabs/MindMapTab.vue'
@@ -131,6 +141,13 @@ const error = ref('')
 const result = ref(null)
 const taskId = ref('')
 let pollTimer = null
+
+const isMember = computed(() => Boolean(auth.user?.is_member))
+
+function openUpgrade() {
+  if (!auth.user) openAuth('membership')
+  else openMembership()
+}
 
 const statusLabel = computed(() => {
   if (statusDetail.value) return statusDetail.value
@@ -183,6 +200,10 @@ async function pollTask(id) {
 
 async function handleSummary() {
   if (!props.url || summarizing.value) return
+  if (!isMember.value) {
+    openUpgrade()
+    return
+  }
   resetState()
   summarizing.value = true
   error.value = ''

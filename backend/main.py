@@ -2,7 +2,7 @@ import urllib.parse
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 
@@ -21,6 +21,8 @@ from services.youtube_helper import friendly_youtube_error
 from services.douyin_helper import friendly_douyin_error
 from register_summary import register_summary_routes
 from register_summary_extended import register_summary_extended_routes
+from register_billing import register_billing_routes
+from services.access import assert_can_download
 
 task_manager = TaskManager()
 
@@ -48,6 +50,7 @@ app.add_middleware(
 
 register_summary_routes(app)
 register_summary_extended_routes(app)
+register_billing_routes(app)
 
 
 @app.get("/api/health", response_model=HealthResponse)
@@ -70,7 +73,8 @@ async def get_video_info(req: InfoRequest):
 
 
 @app.post("/api/download", response_model=DownloadResponse)
-async def start_download(req: DownloadRequest):
+async def start_download(req: DownloadRequest, request: Request):
+    assert_can_download(request, req.format_id)
     try:
         task_id = await task_manager.create_task(req.url, req.format_id)
         return DownloadResponse(task_id=task_id)

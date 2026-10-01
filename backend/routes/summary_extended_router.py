@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from models.summary_extended_schemas import (
     MindMapRequest,
@@ -12,6 +12,7 @@ from models.summary_extended_schemas import (
 )
 from models.summary_schemas import SummaryStatus
 from routes.summary_router import _get_manager
+from services.access import assert_member
 from services.mindmap_service import MindMapService
 from services.summary_chat_service import SummaryChatService
 
@@ -45,7 +46,8 @@ def _require_completed_task(task_id: str):
 
 
 @summary_extended_router.post("/mindmap", response_model=MindMapResponse)
-async def create_mindmap(req: MindMapRequest):
+async def create_mindmap(req: MindMapRequest, request: Request):
+    assert_member(request)
     task = _require_completed_task(req.task_id.strip())
     try:
         return await _get_mindmap_service().generate(req.task_id, task.result)
@@ -56,7 +58,8 @@ async def create_mindmap(req: MindMapRequest):
 
 
 @summary_extended_router.post("/chat", response_model=SummaryChatResponse)
-async def summary_chat(req: SummaryChatRequest):
+async def summary_chat(req: SummaryChatRequest, request: Request):
+    assert_member(request)
     message = req.message.strip()
     if not message:
         raise HTTPException(status_code=400, detail="请输入问题")

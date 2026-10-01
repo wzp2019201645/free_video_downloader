@@ -7,11 +7,19 @@ services:
       - "8000:8000"
     volumes:
       - downloads:/app/downloads
+      - membership_data:/app/data
     environment:
       - DOWNLOAD_DIR=/app/downloads
       - MAX_CONCURRENT=3
       - FILE_TTL_SECONDS=7200
       - CORS_ORIGINS=*
+      - MEMBERSHIP_DATA_DIR=/app/data
+      - PUBLIC_APP_URL=${PUBLIC_APP_URL:-http://localhost:3000}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      - STRIPE_PRICE_ID=${STRIPE_PRICE_ID:-}
+      - SESSION_SECRET=${SESSION_SECRET:-}
+      - STRIPE_PROXY=${STRIPE_PROXY:-}
 
   frontend:
     build:
@@ -26,3 +34,4 @@ services:
 
 volumes:
   downloads:
+  membership_data:

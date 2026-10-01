@@ -47,9 +47,12 @@
               :key="fmt.format_id"
               :value="fmt.format_id"
             >
-              {{ fmt.quality }} · .{{ fmt.ext }}<template v-if="fmt.filesize"> · {{ formatSize(fmt.filesize) }}</template>
+              {{ fmt.quality }} · .{{ fmt.ext }}<template v-if="fmt.filesize"> · {{ formatSize(fmt.filesize) }}</template><template v-if="isLocked(fmt.format_id)"> · 会员专享</template>
             </option>
           </select>
+          <p v-if="selectedLocked" class="mt-2 text-xs text-amber-700">
+            这个清晰度需要 Pro。720p 及以下和仅音频可以免费下载。
+          </p>
         </div>
 
         <!-- 下载按钮 -->
@@ -57,9 +60,10 @@
           <button
             class="btn-primary w-full py-2.5 text-sm"
             :disabled="!selectedFormat || downloading"
-            @click="handleDownload"
+            @click="onDownloadClick"
           >
             <span v-if="downloading">下载中 {{ progress }}%</span>
+            <span v-else-if="selectedLocked">开通 Pro 下载高清</span>
             <span v-else>下载到本地</span>
           </button>
         </div>
@@ -82,8 +86,10 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { startDownload, getTaskStatus, getThumbnailUrl } from '../api/client'
+import { auth, openAuth, openMembership } from '../auth/store'
+import { formatRequiresMembership } from '../utils/membership'
 import DownloadProgress from './DownloadProgress.vue'
 
 const props = defineProps({
@@ -92,9 +98,27 @@ const props = defineProps({
   embedded: { type: Boolean, default: false },
 })
 
-const selectedFormat = ref(
-  props.video.formats.length ? props.video.formats[0].format_id : ''
+function preferredFormat(formats) {
+  if (!formats?.length) return ''
+  if (auth.user?.is_member) return formats[0].format_id
+  const free = formats.find((fmt) => !formatRequiresMembership(fmt.format_id))
+  return free?.format_id || ''
+}
+
+const selectedFormat = ref(preferredFormat(props.video.formats))
+const selectedLocked = computed(
+  () => formatRequiresMembership(selectedFormat.value) && !auth.user?.is_member
 )
+
+function isLocked(formatId) {
+  return formatRequiresMembership(formatId) && !auth.user?.is_member
+}
+
+watch(() => auth.user?.is_member, () => {
+  if (!auth.user?.is_member && formatRequiresMembership(selectedFormat.value)) {
+    selectedFormat.value = preferredFormat(props.video.formats)
+  }
+})
 const downloading = ref(false)
 const downloadComplete = ref(false)
 const progress = ref(0)
@@ -158,6 +182,15 @@ async function pollTask(currentTaskId) {
     taskError.value = '查询进度失败'
     return true
   }
+}
+
+function onDownloadClick() {
+  if (selectedLocked.value) {
+    if (!auth.user) openAuth('membership')
+    else openMembership()
+    return
+  }
+  handleDownload()
 }
 
 async function handleDownload() {

@@ -11,6 +11,7 @@
 - **思维导图**：markmap 经典导图展示，支持下载 SVG / 高清 PNG
 - **字幕**：统一简体中文；支持下载 SRT / TXT
 - 总结结果支持复制 Markdown / 另存为 `.md`
+- **Pro 会员**：邮箱登录；720p 及以下和仅音频免费，1080p、「最佳质量」和 AI 总结需要每月 ¥19 的 Stripe 订阅
 - 响应式 UI，移动端友好
 
 ## 快速开始
@@ -64,6 +65,9 @@ docker compose up -d --build
 | `DOWNLOAD_DIR` | 临时下载目录（默认 `./downloads`） |
 | `MAX_CONCURRENT` | 最大并发下载（默认 3） |
 | `YTDLP_PROXY` | 代理（YouTube 等受限网络） |
+| `STRIPE_SECRET_KEY` | 测试模式密钥 `sk_test_`（`backend/.env`，不提交） |
+| `STRIPE_PRICE_ID` | 每月 ¥19 CNY 的 Price ID |
+| `STRIPE_WEBHOOK_SECRET` | 本地用 `stripe listen` 得到的 `whsec_` |
 
 完整配置见 [docs/summary.md](docs/summary.md)。
 

@@ -16,16 +16,50 @@
           <span class="font-semibold text-gray-900 hidden sm:block">万能视频下载</span>
         </div>
       </div>
-      <button
-        class="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-primary/30
-               text-primary text-sm font-medium opacity-60 cursor-not-allowed"
-        title="即将上线"
-      >
-        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-        </svg>
-        Pro 会员
-      </button>
+      <div class="flex items-center gap-2">
+        <button
+          v-if="!auth.user"
+          class="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900"
+          type="button"
+          @click="openAuth()"
+        >
+          登录
+        </button>
+        <button
+          v-else
+          class="max-w-[8rem] truncate px-2 py-1.5 text-sm text-gray-600 hover:text-gray-900"
+          type="button"
+          :title="auth.user.email"
+          @click="openMembership"
+        >
+          {{ auth.user.email }}
+        </button>
+        <button
+          class="flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium"
+          :class="auth.user?.is_member
+            ? 'bg-primary text-white'
+            : 'border border-primary/30 text-primary'"
+          type="button"
+          @click="onPro"
+        >
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+          {{ auth.user?.is_member ? 'Pro' : '开通 Pro' }}
+        </button>
+      </div>
     </div>
   </header>
 </template>
+
+<script setup>
+import { auth, openAuth, openMembership } from '../auth/store'
+
+function onPro() {
+  if (!auth.user) {
+    openAuth('membership')
+    return
+  }
+  openMembership()
+}
+</script>

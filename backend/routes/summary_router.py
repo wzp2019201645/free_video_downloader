@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from models.summary_schemas import (
     SummaryCreateResponse,
     SummaryRequest,
     SummaryTaskResponse,
 )
+from services.access import assert_member
 from services.summary_manager import SummaryManager
 
 summary_router = APIRouter(prefix="/api/summary", tags=["summary"])
@@ -24,7 +25,8 @@ def _get_manager() -> SummaryManager:
 
 
 @summary_router.post("", response_model=SummaryCreateResponse)
-async def create_summary(req: SummaryRequest):
+async def create_summary(req: SummaryRequest, request: Request):
+    assert_member(request)
     try:
         task_id = await _get_manager().create_task(req.url.strip())
         return SummaryCreateResponse(task_id=task_id)

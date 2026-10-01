@@ -3,6 +3,7 @@ import axios from 'axios'
 const summaryApi = axios.create({
   baseURL: '/api/summary',
   timeout: 300000,
+  withCredentials: true,
 })
 
 export async function startSummary(url) {
